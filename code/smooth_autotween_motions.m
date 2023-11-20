@@ -169,9 +169,16 @@ n_motion = length(motion_paths);
 n_checkpoint = 5;
 
 % Select source motion, checkpoint index, and target motion
-motion_idx_fr = 1; % randi([1,n_motion])
-check_idx     = 4; % randi([1,n_checkpoint])
-motion_idx_to = 3; % randi([1,n_motion])
+SELECT_RANDOM_PAIR = true;
+if SELECT_RANDOM_PAIR
+    motion_idx_fr = randi([1,n_motion]);
+    check_idx     = randi([1,n_checkpoint]);
+    motion_idx_to = randi([1,n_motion]);
+else
+    motion_idx_fr = 1; % randi([1,n_motion])
+    check_idx     = 4; % randi([1,n_checkpoint])
+    motion_idx_to = 3; % randi([1,n_motion])
+end
 
 % Load related information
 
