@@ -1,9 +1,6 @@
 function [A_vel,A_acc,A_jerk] = get_A_vel_acc_jerk(L,dt,varargin)
 %
 % Get matrices corresponding to velocity and acceleration space mapping
-% When computing velocities, we assume that v@(t=L-1)=v@(t=L)
-% When computing accerlations, we assume that v@(t=L+1)=0.0
-% When computing jerks, a@(t=L-1)=a@(t=L)=a@(t=L+1)
 %
 
 % Velocity mapping

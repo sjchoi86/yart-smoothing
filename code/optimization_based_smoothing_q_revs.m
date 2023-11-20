@@ -1,4 +1,5 @@
-function q_revs_smt = optimization_based_smoothing_q_revs(secs,q_revs,chain_robot,varargin)
+function [q_revs_smt,exit_flags] = optimization_based_smoothing_q_revs(...
+    secs,q_revs,chain_robot,varargin)
 %
 % Optimization-based smoothing of revolute joint trajectories of a robot
 %
@@ -41,6 +42,7 @@ if VERBOSE
     fprintf("[optimization_based_smoothing_q_revs] Smooth [%d] joint trajectories.\n",...
         n_joint);
 end
+exit_flags = zeros(1,n_joint);
 for i_idx = 1:n_joint % for each joint
 
     % Get joint position limits
@@ -85,6 +87,7 @@ for i_idx = 1:n_joint % for each joint
 
     % Append
     q_revs_smt(:,i_idx) = traj_smt;
+    exit_flags(i_idx) = exit_flag;
 end
 
 % Check selc-collision
