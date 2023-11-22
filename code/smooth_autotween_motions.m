@@ -211,8 +211,8 @@ q_revs_fr_check = q_revs_fr(1:L_fr_check,:);
 secs_tween = max(secs_fr_check):dt:(L_tween-1)*dt+max(secs_fr_check);
 secs_to = max(secs_tween):dt:(L_to-1)*dt+max(secs_tween);
 
-ca;
 % Plot in-betweening motions
+ca; 
 axes_info = [0.05,0.12,0.93,0.8];
 fig_idx = 1; USE_DRAGZOOM = 1; afs = 15;
 set_fig(figure(fig_idx),'pos',[0.0,0.6,0.5,0.35],'AXIS_EQUAL',0,'USE_DRAGZOOM',USE_DRAGZOOM,...
@@ -220,5 +220,8 @@ set_fig(figure(fig_idx),'pos',[0.0,0.6,0.5,0.35],'AXIS_EQUAL',0,'USE_DRAGZOOM',U
 plot(secs_fr_check,q_revs_fr_check,'-','color','k');
 plot(secs_tween,q_revs_tween,'-','color','r');
 plot(secs_to,q_revs_to,'-','color','b');
+title_str = sprintf("from motion:[%d]@check:[%d] to motion:[%d]",...
+    motion_idx_fr,check_idx,motion_idx_to);
+plot_title(title_str,'fig_idx',fig_idx);
 
 %%
