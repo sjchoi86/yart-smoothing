@@ -1,10 +1,6 @@
 addpath_yart
 addpath_rmr
-%%
-%
-% Smooth (+fading) all motions and auto-tween smoothed motions
-%
-%
+%% Smooth all motions and then run tweening of all pairs (all on 30HZ)
 ccc
 
 % Configuration
@@ -161,8 +157,114 @@ for i_idx = 1:n_motion % fr motion
     end % for check_idx = 1:n_checkpoint % fr-checkpoint
 end % for i_idx = 1:n_motion % fr motion
 
-%% Check inbetweening between motions
+%% Interpolation all motions to 1KHZ and then run additional smoothing on 1KHZ motion
 ccc
+
+% Configuration
+motion_paths = dir_compact('../data_smt_cf/mhformer_*','VERBOSE',0);
+n_motion = length(motion_paths);
+n_checkpoint = 5;
+
+for motion_idx_fr = 1:n_motion % for all fr motions
+    % From motion
+    motion_name_fr = strrep(motion_paths(motion_idx_fr).name,'.mat','');
+    fr_path = [motion_paths(motion_idx_fr).folder,'/',motion_paths(motion_idx_fr).name];
+    l = load(fr_path); secs_fr = l.secs; q_revs_fr = l.q_revs_smt_cf; L_fr = size(q_revs_fr,1);
+
+    for check_idx = 1:n_checkpoint % for all checkpoints
+        L_fr_check = round(check_idx/n_checkpoint*L_fr);
+        secs_fr_trim = secs_fr(1:L_fr_check);
+        q_revs_fr_trim = q_revs_fr(1:L_fr_check,:);
+        for motion_idx_to = 1:n_motion % for all to motions
+
+            % To motion
+            motion_name_to = strrep(motion_paths(motion_idx_to).name,'.mat','');
+            to_path = [motion_paths(motion_idx_to).folder,'/',motion_paths(motion_idx_to).name];
+            l = load(to_path); secs_to = l.secs; q_revs_to = l.q_revs_smt_cf;
+            
+            % Tweening motion 
+            tween_path = sprintf('../data_tween/fr_%s@tick_%d_to_%s.mat',...
+                motion_name_fr,L_fr_check,motion_name_to);
+            l = load(tween_path); secs_tween = l.secs_tween; q_revs_tween = l.q_revs_tween;
+
+            % Interpolate 'q_revs_fr_trim', 'q_revs_tween', 'q_revs_to' to 1KHZ
+            secs_fr_1khz = linspace(...
+                secs_fr_trim(1),secs_fr_trim(end),round(secs_fr_trim(end)*1000))';
+            q_revs_fr_1khz = gp_based_interpolation(secs_fr_trim,q_revs_fr_trim,secs_fr_1khz);
+            secs_tween_1khz = linspace(...
+                secs_tween(1),secs_tween(end),round(secs_tween(end)*1000))';
+            q_revs_tween_1khz = gp_based_interpolation(secs_tween,q_revs_tween,secs_tween_1khz);
+            secs_to_1khz = linspace(secs_to(1),secs_to(end),round(secs_to(end)*1000))';
+            q_revs_to_1khz = gp_based_interpolation(secs_to,q_revs_to,secs_to_1khz);
+
+            % Concatenate fr, tween, and to trajectories
+            q_revs_concat_1khz = [...
+                q_revs_fr_1khz ; ...
+                q_revs_tween_1khz ; ...
+                q_revs_to_1khz ...
+                ];
+            L_concat_1khz = size(q_revs_concat_1khz,1);
+            secs_concat_1khz = linspace(0,L_concat_1khz/1000,L_concat_1khz)';
+            tick_fr_fr    = 1;
+            tick_fr_to    = tick_fr_fr + size(q_revs_fr_1khz,1) - 1;
+            tick_tween_fr = tick_fr_to + 1;
+            tick_tween_to = tick_tween_fr + size(q_revs_tween_1khz,1) - 1;
+            tick_to_fr    = tick_tween_to + 1;
+            tick_to_to    = tick_to_fr + size(q_revs_to_1khz,1) - 1;
+
+            % First, examine each trajectories (fr,tween,to) separately
+            EXAMINE_TRAJ_SEPARATELY = false;
+            if EXAMINE_TRAJ_SEPARATELY
+                ca; % close all
+                marker = '.'; % 'none', '.'
+                check_traj(secs_concat_1khz(tick_fr_fr:tick_fr_to),q_revs_fr_1khz,...
+                    'PLOT_FIGS',1,'ls','-','lw',1,'marker',marker,...
+                    'fig_idx_offset',0,'fig_pos_yoffset',-0.0);
+                check_traj(secs_concat_1khz(tick_tween_fr:tick_tween_to),q_revs_tween_1khz,...
+                    'PLOT_FIGS',1,'ls','-','lw',1,'marker',marker,...
+                    'fig_idx_offset',4,'fig_pos_yoffset',0.15);
+                check_traj(secs_concat_1khz(tick_to_fr:tick_to_to),q_revs_to_1khz,...
+                    'PLOT_FIGS',1,'ls','-','lw',1,'marker',marker,...
+                    'fig_idx_offset',8,'fig_pos_yoffset',0.4);
+                check_traj(secs_concat_1khz,q_revs_concat_1khz,...
+                    'PLOT_FIGS',1,'ls','-','lw',1,'marker',marker,...
+                    'fig_idx_offset',12,'fig_pos_yoffset',0.65);
+                pause;
+            end
+            
+            % Now run smoothing 
+            n_a = 10; n_b = 10; n_c = 10; 
+            tick_smt_start = tick_tween_fr;
+            [q_revs_concat_1khz_hat,~,idxs_b_1,~] = run_tween_smoothing(...
+                secs_concat_1khz,q_revs_concat_1khz,tick_smt_start,n_a,n_b,n_c);
+            tick_smt_start = tick_tween_to-n_b+1;
+            [q_revs_concat_1khz_hat,~,idxs_b_2,~] = run_tween_smoothing(...
+                secs_concat_1khz,q_revs_concat_1khz_hat,tick_smt_start,n_a,n_b,n_c);
+            
+            % Plot the result of the optimization
+            EXAMINE_OPTIMIZATION = true;
+            if EXAMINE_OPTIMIZATION
+                ca; % close all
+                marker = '.'; % 'none', '.'
+                check_traj(secs_concat_1khz,q_revs_concat_1khz,...
+                    'PLOT_FIGS',1,'ls','-','lw',1,'marker',marker,...
+                    'fig_idx_offset',0,'fig_pos_yoffset',0.0,...
+                    'idxs2highlight_1',idxs_b_1,'idxs2highlight_2',idxs_b_2);
+                check_traj(secs_concat_1khz,q_revs_concat_1khz_hat,...
+                    'PLOT_FIGS',1,'ls','-','lw',1,'marker',marker,...
+                    'fig_idx_offset',4,'fig_pos_yoffset',0.25,...
+                    'idxs2highlight_1',idxs_b_1,'idxs2highlight_2',idxs_b_2);
+                pause;
+            end
+            
+        end % for all to motions
+    end % for all checkpoints
+end % for all fr motions
+fprintf("Done.\n")
+
+%% Check inbetweening between motions (on 1KHZ)
+ccc
+
 
 motion_paths = dir_compact('../data_smt_cf/mhformer_*','VERBOSE',0);
 n_motion = length(motion_paths);
@@ -224,4 +326,4 @@ title_str = sprintf("from motion:[%d]@check:[%d] to motion:[%d]",...
     motion_idx_fr,check_idx,motion_idx_to);
 plot_title(title_str,'fig_idx',fig_idx);
 
-%%
+%% 

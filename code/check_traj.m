@@ -20,13 +20,18 @@ addParameter(iP,'fade_dur',[]);    % fade in and out duration in seconds
 addParameter(iP,'fade_jerk_limit',[]); % fade in and out jerk limit
 addParameter(iP,'VERBOSE',false);
 addParameter(iP,'PLOT_FIGS',true);
+addParameter(iP,'ls','-');
 addParameter(iP,'lw',2);
+addParameter(iP,'marker','none');
 addParameter(iP,'afs',15);
 addParameter(iP,'tfs',15);
 
 addParameter(iP,'fig_idx_offset',0);
 addParameter(iP,'fig_pos_yoffset',0);
 addParameter(iP,'traj_name',[]);
+
+addParameter(iP,'idxs2highlight_1',[]);
+addParameter(iP,'idxs2highlight_2',[]);
 
 parse(iP,varargin{:});
 pos_lower  = iP.Results.pos_lower;
@@ -44,13 +49,18 @@ fade_dur   = iP.Results.fade_dur;
 fade_jerk_limit = iP.Results.fade_jerk_limit;
 VERBOSE    = iP.Results.VERBOSE;
 PLOT_FIGS  = iP.Results.PLOT_FIGS;
+ls         = iP.Results.ls;
 lw         = iP.Results.lw;
+marker     = iP.Results.marker;
 afs        = iP.Results.afs;
 tfs        = iP.Results.tfs;
 
 fig_idx_offset  = iP.Results.fig_idx_offset;
 fig_pos_yoffset = iP.Results.fig_pos_yoffset;
 traj_name       = iP.Results.traj_name;
+
+idxs2highlight_1 = iP.Results.idxs2highlight_1;
+idxs2highlight_2 = iP.Results.idxs2highlight_2;
 
 % Get velocities and accelerations
 L = size(traj,1);
@@ -210,7 +220,17 @@ if PLOT_FIGS
     if ~isempty(pos_final)
         plot(secs(end),pos_final,'o','Color','b','LineWidth',lw,'MarkerSize',10);
     end
-    plot(secs,traj,'LineStyle','-','Color','k','LineWidth',lw);
+    plot(secs,traj,'LineStyle',ls,'Color','k','LineWidth',lw,'Marker',marker);
+
+    if ~isempty(idxs2highlight_1)
+        plot(secs(idxs2highlight_1,:),traj(idxs2highlight_1,:),...
+            'LineStyle',ls,'Color','r','LineWidth',lw,'Marker',marker);
+    end
+    if ~isempty(idxs2highlight_2)
+        plot(secs(idxs2highlight_2,:),traj(idxs2highlight_2,:),...
+            'LineStyle',ls,'Color','r','LineWidth',lw,'Marker',marker);
+    end
+
     xlim([secs(1),secs(end)]);
     if isempty(traj_name)
         plot_title('Original Trajectories','fig_idx',fig_idx,'tfs',tfs);
@@ -233,7 +253,17 @@ if PLOT_FIGS
     if ~isempty(vel_final)
         plot(secs(end),vel_final,'o','Color','b','LineWidth',lw,'MarkerSize',10);
     end
-    plot(secs,vel,'LineStyle','-','Color','k','LineWidth',lw);
+    plot(secs,vel,'LineStyle',ls,'Color','k','LineWidth',lw,'Marker',marker);
+
+    if ~isempty(idxs2highlight_1)
+        plot(secs(idxs2highlight_1,:),vel(idxs2highlight_1,:),...
+            'LineStyle',ls,'Color','r','LineWidth',lw,'Marker',marker);
+    end
+    if ~isempty(idxs2highlight_2)
+        plot(secs(idxs2highlight_2,:),vel(idxs2highlight_2,:),...
+            'LineStyle',ls,'Color','r','LineWidth',lw,'Marker',marker);
+    end
+
     xlim([secs(1),secs(end)]);
     plot_title('Numerical Velocity','fig_idx',fig_idx,'tfs',tfs);
 
@@ -253,7 +283,17 @@ if PLOT_FIGS
     if ~isempty(acc_final)
         plot(secs(end),acc_final,'o','Color','b','LineWidth',lw,'MarkerSize',10);
     end
-    plot(secs,acc,'LineStyle','-','Color','k','LineWidth',lw);
+    plot(secs,acc,'LineStyle',ls,'Color','k','LineWidth',lw,'Marker',marker);
+
+    if ~isempty(idxs2highlight_1)
+        plot(secs(idxs2highlight_1,:),acc(idxs2highlight_1,:),...
+            'LineStyle',ls,'Color','r','LineWidth',lw,'Marker',marker);
+    end
+    if ~isempty(idxs2highlight_2)
+        plot(secs(idxs2highlight_2,:),acc(idxs2highlight_2,:),...
+            'LineStyle',ls,'Color','r','LineWidth',lw,'Marker',marker);
+    end
+
     xlim([secs(1),secs(end)]);
     plot_title('Numerical Acceleration','fig_idx',fig_idx,'tfs',tfs);
 
@@ -263,7 +303,17 @@ if PLOT_FIGS
         'pos',[0.75,0.65-fig_pos_yoffset,0.25,0.25],...
         'AXIS_EQUAL',0,'USE_DRAGZOOM',USE_DRAGZOOM,...
         'axes_info',axes_info,'ax_str','t [sec]','ay_str','jerk','afs',afs);
-    plot(secs,jerk,'LineStyle','-','Color','k','LineWidth',lw);
+    plot(secs,jerk,'LineStyle',ls,'Color','k','LineWidth',lw,'Marker',marker);
+
+    if ~isempty(idxs2highlight_1)
+        plot(secs(idxs2highlight_1,:),jerk(idxs2highlight_1,:),...
+            'LineStyle',ls,'Color','r','LineWidth',lw,'Marker',marker);
+    end
+    if ~isempty(idxs2highlight_2)
+        plot(secs(idxs2highlight_2,:),jerk(idxs2highlight_2,:),...
+            'LineStyle',ls,'Color','r','LineWidth',lw,'Marker',marker);
+    end
+
     xlim([secs(1),secs(end)]);
     plot_title('Numerical Jerk','fig_idx',fig_idx,'tfs',tfs);
     if ~isempty(jerk_limit)

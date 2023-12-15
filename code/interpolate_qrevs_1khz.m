@@ -26,6 +26,17 @@ q_revs_1khz = gp_based_interpolation(secs,q_revs,secs_1khz);
 check_traj(secs_1khz,q_revs_1khz,'VERBOSE',1,'PLOT_FIGS',1,'lw',1,...
     'fig_idx_offset',4,'fig_pos_yoffset',0.25,'traj_name','q_revs_1khz'); 
 
+%%
+ca; clc;
+axes_info = [0.12,0.12,0.83,0.8];
+fig_idx = 1; USE_DRAGZOOM = 1;
+fig_pos_yoffset = 0.0; afs = 10;
+set_fig(figure(fig_idx),'pos',[0.0,0.65-fig_pos_yoffset,0.25,0.25],...
+    'AXIS_EQUAL',0,'USE_DRAGZOOM',USE_DRAGZOOM,...
+    'axes_info',axes_info,'ax_str','t [sec]','ay_str','x(t)','afs',afs);
+plot(secs,q_revs,'-','Color','b');
+plot(secs_1khz,q_revs_1khz,'-','Color','r');
+
 %% Smooth first, then interpoate joint revolute joints
 ccc
 

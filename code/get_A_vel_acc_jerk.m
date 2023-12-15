@@ -1,4 +1,4 @@
-function [A_vel,A_acc,A_jerk] = get_A_vel_acc_jerk(L,dt,varargin)
+function [A_vel,A_acc,A_jerk] = get_A_vel_acc_jerk(L,dt)
 %
 % Get matrices corresponding to velocity and acceleration space mapping
 %
