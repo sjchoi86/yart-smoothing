@@ -17,13 +17,14 @@ x_concat = [x_a;x_b;x_c];
 switch cost_type
     case 'v'
         vel = A_vel*x_concat;
-        cost = norm(vel); % max(abs(vel));
+        cost = norm(vel);
     case 'a'
         acc = A_acc*x_concat;
-        cost = norm(acc); % max(abs(acc));
+        cost = norm(acc);
     case 'j'
         jerk = A_jerk*x_concat;
-        cost = norm(jerk); % max(abs(jerk));
+        cost = norm(jerk);
+        cost = sqrt(cost); % normalize scale
     otherwise
         fprintf(2,"[get_tween_smoothing_cost] undefined cost_type:[%s]\n",cost_type);
         cost = 0;

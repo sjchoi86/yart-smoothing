@@ -166,47 +166,58 @@ n_motion = length(motion_paths);
 n_checkpoint = 5;
 
 for motion_idx_fr = 1:n_motion % for all fr motions
-    % From motion
+    
+    % Load from motion
     motion_name_fr = strrep(motion_paths(motion_idx_fr).name,'.mat','');
     fr_path = [motion_paths(motion_idx_fr).folder,'/',motion_paths(motion_idx_fr).name];
     l = load(fr_path); secs_fr = l.secs; q_revs_fr = l.q_revs_smt_cf; L_fr = size(q_revs_fr,1);
+    
+    % Interpolate from motion to 1HKZ
+    secs_fr_1khz = linspace(secs_fr(1),secs_fr(end),round(secs_fr(end)*1000))';
+    q_revs_fr_1khz = gp_based_interpolation(secs_fr,q_revs_fr,secs_fr_1khz);
+    L_fr_1khz = size(q_revs_fr_1khz,1);
 
     for check_idx = 1:n_checkpoint % for all checkpoints
+
+        % Compute check point (where to trim)
         L_fr_check = round(check_idx/n_checkpoint*L_fr);
-        secs_fr_trim = secs_fr(1:L_fr_check);
-        q_revs_fr_trim = q_revs_fr(1:L_fr_check,:);
+        sec_fr_check = secs_fr(L_fr_check);
+        [~,L_fr_check_1khz] = min(abs(secs_fr_1khz-sec_fr_check));
+        
+        % Actual trim happens here
+        secs_fr_trim_1khz = secs_fr_1khz(1:L_fr_check_1khz);
+        q_revs_fr_trim_1khz = q_revs_fr_1khz(1:L_fr_check_1khz,:);
+
         for motion_idx_to = 1:n_motion % for all to motions
 
-            % To motion
+            % Load to motion
             motion_name_to = strrep(motion_paths(motion_idx_to).name,'.mat','');
             to_path = [motion_paths(motion_idx_to).folder,'/',motion_paths(motion_idx_to).name];
             l = load(to_path); secs_to = l.secs; q_revs_to = l.q_revs_smt_cf;
             
-            % Tweening motion 
+            % Load tweening motion 
             tween_path = sprintf('../data_tween/fr_%s@tick_%d_to_%s.mat',...
                 motion_name_fr,L_fr_check,motion_name_to);
             l = load(tween_path); secs_tween = l.secs_tween; q_revs_tween = l.q_revs_tween;
 
-            % Interpolate 'q_revs_fr_trim', 'q_revs_tween', 'q_revs_to' to 1KHZ
-            secs_fr_1khz = linspace(...
-                secs_fr_trim(1),secs_fr_trim(end),round(secs_fr_trim(end)*1000))';
-            q_revs_fr_1khz = gp_based_interpolation(secs_fr_trim,q_revs_fr_trim,secs_fr_1khz);
-            secs_tween_1khz = linspace(...
-                secs_tween(1),secs_tween(end),round(secs_tween(end)*1000))';
+            % Interpolate tween motion to 1HKZ
+            secs_tween_1khz = linspace(secs_tween(1),secs_tween(end),round(secs_tween(end)*1000))';
             q_revs_tween_1khz = gp_based_interpolation(secs_tween,q_revs_tween,secs_tween_1khz);
+
+            % Interpolate to motion to 1HKZ
             secs_to_1khz = linspace(secs_to(1),secs_to(end),round(secs_to(end)*1000))';
             q_revs_to_1khz = gp_based_interpolation(secs_to,q_revs_to,secs_to_1khz);
 
             % Concatenate fr, tween, and to trajectories
             q_revs_concat_1khz = [...
-                q_revs_fr_1khz ; ...
+                q_revs_fr_trim_1khz ; ...
                 q_revs_tween_1khz ; ...
                 q_revs_to_1khz ...
                 ];
             L_concat_1khz = size(q_revs_concat_1khz,1);
             secs_concat_1khz = linspace(0,L_concat_1khz/1000,L_concat_1khz)';
             tick_fr_fr    = 1;
-            tick_fr_to    = tick_fr_fr + size(q_revs_fr_1khz,1) - 1;
+            tick_fr_to    = tick_fr_fr + size(q_revs_fr_trim_1khz,1) - 1;
             tick_tween_fr = tick_fr_to + 1;
             tick_tween_to = tick_tween_fr + size(q_revs_tween_1khz,1) - 1;
             tick_to_fr    = tick_tween_to + 1;
@@ -217,7 +228,7 @@ for motion_idx_fr = 1:n_motion % for all fr motions
             if EXAMINE_TRAJ_SEPARATELY
                 ca; % close all
                 marker = '.'; % 'none', '.'
-                check_traj(secs_concat_1khz(tick_fr_fr:tick_fr_to),q_revs_fr_1khz,...
+                check_traj(secs_concat_1khz(tick_fr_fr:tick_fr_to),q_revs_fr_trim_1khz,...
                     'PLOT_FIGS',1,'ls','-','lw',1,'marker',marker,...
                     'fig_idx_offset',0,'fig_pos_yoffset',-0.0);
                 check_traj(secs_concat_1khz(tick_tween_fr:tick_tween_to),q_revs_tween_1khz,...
@@ -233,7 +244,7 @@ for motion_idx_fr = 1:n_motion % for all fr motions
             end
             
             % Now run smoothing 
-            n_a = 10; n_b = 10; n_c = 10; 
+            n_a = 10; n_b = 20; n_c = 10; 
             tick_smt_start = tick_tween_fr;
             [q_revs_concat_1khz_hat,~,idxs_b_1,~] = run_tween_smoothing(...
                 secs_concat_1khz,q_revs_concat_1khz,tick_smt_start,n_a,n_b,n_c);
@@ -264,7 +275,6 @@ fprintf("Done.\n")
 
 %% Check inbetweening between motions (on 1KHZ)
 ccc
-
 
 motion_paths = dir_compact('../data_smt_cf/mhformer_*','VERBOSE',0);
 n_motion = length(motion_paths);
